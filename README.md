@@ -1,106 +1,85 @@
 # Cortador de Videos Automatizado con IA 🎬🤖
 
-Este proyecto es una herramienta automatizada para creadores de contenido (YouTubers, TikTokers, Instagramers). Te permite introducir la URL de un video de YouTube y, utilizando Inteligencia Artificial, identificar los momentos más "poderosos" o virales del video para recortarlos automáticamente y tenerlos listos para subir a Shorts, Reels o TikTok.
+Este proyecto es una herramienta avanzada para creadores de contenido que permite transformar videos largos de YouTube en clips virales (Shorts, Reels, TikTok) de forma 100% automatizada utilizando Inteligencia Artificial.
 
 ## ¿Qué hace exactamente?
 
-El sistema funciona a través de un *pipeline* interactivo de 4 fases:
-1. **Descarga**: Obtiene el video en la máxima calidad disponible (MP4) y extrae una copia del audio (MP3) de YouTube.
-2. **Transcripción**: Utiliza OpenAI Whisper (procesamiento local) para generar una transcripción granular, palabra por palabra, con tiempos exactos (*timestamps*).
-3. **Evaluación IA**: Envía la transcripción a la API de OpenAI (GPT-5.4-mini o GPT-4o-mini) para que un "editor experto" seleccione los 3-5 mejores momentos que duren menos de 30 segundos.
-4. **Recorte**: Usa FFmpeg para recortar esos momentos del video original en alta calidad y sin pérdida.
-
-Todo se organiza automáticamente en carpetas separadas por el ID del video de YouTube.
+El sistema unifica todo el proceso de edición en un solo lugar:
+1. **Descarga**: Obtiene el video (MP4) y audio (MP3) de YouTube en la mejor calidad.
+2. **Transcripción**: Genera un texto palabra por palabra con tiempos exactos usando **OpenAI Whisper**.
+3. **Análisis con IA**: Envía la transcripción a **GPT-5.4-mini** para identificar los momentos más impactantes basándose en tus preferencias.
+4. **Recorte de Precisión**: Extrae los clips automáticamente usando **FFmpeg**, asegurando que cada video sea independiente y visualmente perfecto.
 
 ---
 
 ## 🛠️ Requisitos Previos
 
-Antes de instalar Python, necesitas dos cosas fundamentales en tu sistema:
-
-1. **FFmpeg**: Es el motor de procesamiento de video.
-   - **Mac**: Instálalo usando Homebrew: `brew install ffmpeg`
-   - **Windows**: Descárgalo desde [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) o usa Winget: `winget install ffmpeg`
-2. **OpenAI API Key**: Necesitas una clave de API de OpenAI con saldo disponible.
-   - Debes configurarla como variable de entorno llamada `OPENAI_API_KEY`.
+1. **FFmpeg**: Necesario para el procesamiento de video.
+   - **Mac**: `brew install ffmpeg`
+   - **Windows**: `winget install ffmpeg` o descarga desde [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
+2. **OpenAI API Key**: Configúrala en tu sistema como una variable de entorno:
+   - `OPENAI_API_KEY=tu_clave_aqui`
 
 ---
 
 ## 🚀 Instalación y Entorno Virtual
 
-Se recomienda encarecidamente utilizar un **entorno virtual** para instalar las dependencias y no afectar tu sistema principal.
+Se recomienda usar un entorno virtual para mantener las dependencias aisladas.
 
-### En Windows (PC)
-
-1. Abre tu terminal (PowerShell o CMD) y navega a la carpeta del proyecto.
-2. Crea el entorno virtual:
-   ```powershell
-   python -m venv venv
-   ```
-3. Activa el entorno virtual:
-   ```powershell
-   .\venv\Scripts\activate
-   ```
-   *(Si te da error de permisos en PowerShell, ejecuta primero: `Set-ExecutionPolicy Unrestricted -Scope CurrentUser`)*
-4. Instala las dependencias:
-   ```powershell
-   pip install -r requirements.txt
-   ```
+### En Windows
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
 
 ### En macOS / Linux
-
-1. Abre tu Terminal y navega a la carpeta del proyecto.
-2. Crea el entorno virtual:
-   ```bash
-   python3 -m venv venv
-   ```
-3. Activa el entorno virtual:
-   ```bash
-   source venv/bin/activate
-   ```
-4. Instala las dependencias:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 ---
 
-## 💻 Cómo Usarlo
+## 💻 Manual de Uso Interactivo
 
-Una vez que tengas tu entorno virtual activado y tu clave de API configurada, simplemente ejecuta la aplicación principal:
-
-**En Windows:**
-```powershell
+Para iniciar el sistema, ejecuta:
+```bash
 python app.py
 ```
 
-**En Mac:**
-```bash
-python3 app.py
-```
+### 1. Inicio y Proyecto
+Al iniciar, el programa te pedirá la **URL de YouTube**. Automáticamente extraerá el ID del video y creará una carpeta en `proyectos/{ID_DEL_VIDEO}/` para mantener todo ordenado.
 
-### El proceso paso a paso:
-1. **Pega la URL**: El programa te pedirá que pegues el link de YouTube.
-2. **Carpetas**: Se creará automáticamente una carpeta en `proyectos/{ID_DEL_VIDEO}`.
-3. **Flujo Interactivo**: El programa hará una fase (ej. descargar) y se pausará preguntando: `¿Deseas continuar con la siguiente fase? (s/n)`. Presiona `s` y Enter para continuar.
-4. **Resultados**: Al finalizar, entra en `proyectos/{ID_DEL_VIDEO}/extraidos/` y ahí estarán tus clips en formato `.mp4`, listos para publicar.
+### 2. El Menú Principal
+El sistema cuenta con un menú inteligente que te da control total:
+*   **[1] Ejecutar Pipeline Completo**: El modo automático. Detecta si ya existen archivos (como la descarga o transcripción) y se los salta para ahorrarte tiempo.
+*   **[2-4] Forzar Fases**: Si algo salió mal en una fase específica (ej. quieres que la IA analice el video de nuevo), puedes usar estas opciones para sobrescribir los archivos antiguos.
+*   **[5] Recortar Clips**: Ejecuta el motor de edición sobre la última lista de momentos generada.
+
+### 3. Personalización de Clips
+Al llegar a la fase de IA, el sistema te pedirá tres parámetros clave:
+1. **Duración Mínima**: (Ej. 15s) Evita clips demasiado cortos.
+2. **Duración Máxima**: (Ej. 60s) Asegura que el contenido sea dinámico.
+3. **Solicitud Especial**: Aquí puedes hablar con la IA. Ejemplo: *"Busca solo los momentos más graciosos"*, *"Prioriza cuando se hable de motivación"* o *"Ignora la parte del patrocinador"*.
 
 ---
 
-## 📂 Estructura del Proyecto Generado
+## 📂 Estructura de Archivos
 
-Cuando procesas un video, el programa organiza todo así:
-
+Cada video genera su propia "isla" de archivos:
 ```text
 proyectos/
-└── QNDbqKYFOeQ/                    # ID único del video
-    ├── video.mp4                   # Video original completo
-    ├── video.mp3                   # Audio original
-    ├── extraccion.txt              # Transcripción completa y granular
-    ├── partes_poderosas.txt        # Análisis de la IA con los recortes
-    └── extraidos/                  # ¡Tus clips finales!
-        ├── clip_01_explicacion.mp4
-        └── clip_02_explicacion.mp4
+└── {ID_VIDEO}/
+    ├── video.mp4          # Fuente original
+    ├── video.mp3          # Audio para la IA
+    ├── extraccion.txt     # Transcripción completa
+    ├── partes_poderosas.txt # La lista de "tesoros" encontrados por la IA
+    └── extraidos/         # ¡Tus clips finales listos para subir!
 ```
 
-> **Nota**: La primera vez que ejecutes el paso de transcripción, Whisper descargará un modelo de IA (aprox 460MB). Las siguientes veces no lo hará.
+---
+
+## ⚡ Optimización
+El sistema usa **Lazy Loading** (carga perezosa). La aplicación abre instantáneamente y solo carga los motores pesados de IA (Whisper) cuando realmente vas a realizar una transcripción, ahorrando memoria y tiempo.
