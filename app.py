@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import subprocess
+import prompt_extractor
 
 # ==========================================
 # UTILIDADES
@@ -128,10 +129,8 @@ def fase_2_transcribir(project_folder, force=False):
     print(f"¡Transcripción guardada en '{output_file}'!")
 
 # ==========================================
-# FASE 3: EVALUACIÓN IA
-# ==========================================
-def fase_3_evaluar_ia(project_folder, force=False, min_sec=10, max_sec=50, solicitud_especial=""):
-    print("\n--- FASE 3: EVALUACIÓN CON IA ---")
+def fase_3_evaluar_ia(project_folder, force=False, solicitud_especial=""):
+    print("\n--- FASE 3: EVALUACIÓN CON IA (ENFOQUE POR HILO NARRATIVO) ---")
     
     from openai import OpenAI # Importación perezosa
     
@@ -160,48 +159,41 @@ def fase_3_evaluar_ia(project_folder, force=False, min_sec=10, max_sec=50, solic
     texto_completo = partes[0].replace("=== TEXTO COMPLETO ===", "").strip()
     granular = partes[1].strip() if len(partes) > 1 else ""
 
-    print(f"Enviando transcripción a {MODELO}...")
+    # PASO 1: IDENTIFICACIÓN DE HILOS NARRATIVOS
+    print("[IA] Paso 1: Identificando hilos narrativos coherentes...")
+    prompt_mapa = prompt_extractor.obtener_prompt_mapa(texto_completo, solicitud_especial)
 
-    prompt = f"""
-    Eres un experto editor de video para redes sociales (TikTok, Instagram Reels, Shorts).
-    Tu tarea es analizar el siguiente texto de un video y extraer TODAS las partes "poderosas", inspiradoras o impactantes que puedas identificar.
-    
-    REGLAS ESTRICTAS:
-    1. Cada segmento debe durar ENTRE {min_sec} Y {max_sec} SEGUNDOS. (No más, no menos).
-    2. Debes copiar EXACTAMENTE los timestamps que aparecen en el 'DESGLOSE GRANULAR'.
-    3. El formato de tiempo TIENE QUE SER EXACTAMENTE: HH:MM:SS,mmm (Ejemplo: 00:01:23,450). NUNCA añades ceros extra ni cambies el formato.
-    4. El tiempo de fin siempre debe ser mayor al tiempo de inicio.
-    5. El resultado debe ser EXCLUSIVAMENTE una lista con este formato:
-    [HH:MM:SS,mmm --> HH:MM:SS,mmm] // frase_breve_explicativa
-    
-    TEXTO COMPLETO PARA CONTEXTO:
-    {texto_completo}
-    
-    DESGLOSE GRANULAR (Usa esto para los tiempos):
-    {granular}
-    """
-
-    if solicitud_especial:
-        prompt += f"\nSOLICITUD ESPECIAL DEL USUARIO:\n{solicitud_especial}\n"
 
     try:
-        response = client.chat.completions.create(
+        response_mapa = client.chat.completions.create(
+            model=MODELO,
+            messages=[{"role": "user", "content": prompt_mapa}],
+            temperature=0.3
+        )
+        mapa_bloques = response_mapa.choices[0].message.content.strip()
+        print(f"Mapa de contenido generado:\n{mapa_bloques}\n")
+
+        # PASO 2: EXTRACCIÓN DE PRECISIÓN POR TEMA
+        print("[IA] Paso 2: Extrayendo clips con coherencia narrativa...")
+        prompt_final = prompt_extractor.obtener_prompt_final(mapa_bloques, granular, solicitud_especial)
+
+
+        response_final = client.chat.completions.create(
             model=MODELO,
             messages=[
-                {"role": "system", "content": "Eres un asistente que identifica hooks y momentos poderosos en transcripciones de video."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "Eres un experto en sincronización de video y detección de hooks virales."},
+                {"role": "user", "content": prompt_final}
             ],
-            temperature=0.7
+            temperature=0.5
         )
 
-        resultado_ia = response.choices[0].message.content.strip()
+        resultado_ia = response_final.choices[0].message.content.strip()
 
-        output_file = os.path.join(project_folder, "partes_poderosas.txt")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(resultado_ia)
 
-        print("¡Análisis completado!")
-        print(f"Momentos poderosos guardados en '{output_file}':\n")
+        print("¡Análisis de precisión completado!")
+        print(f"Resultados guardados en '{output_file}':\n")
         print(resultado_ia)
 
     except Exception as e:
@@ -320,17 +312,10 @@ def main():
             fase_2_transcribir(project_folder)
             preguntar_continuar("Transcripción")
             
-            # Pedir duraciones y solicitud especial para la fase 3
-            try:
-                min_s = int(input("\nDuración MÍNIMA del clip (segundos) [10]: ") or "10")
-                max_s = int(input("Duración MÁXIMA del clip (segundos) [50]: ") or "50")
-                solicitud = input("¿Tienes alguna solicitud especial para la IA? (opcional): ").strip()
-            except ValueError:
-                print("Valor no válido, usando por defecto 10-50s.")
-                min_s, max_s = 10, 50
-                solicitud = ""
+            # Pedir solicitud especial para la fase 3
+            solicitud = input("\n¿Tienes alguna solicitud especial para la IA? (opcional, ej: 'enfócate en consejos de salud'): ").strip()
                 
-            fase_3_evaluar_ia(project_folder, min_sec=min_s, max_sec=max_s, solicitud_especial=solicitud)
+            fase_3_evaluar_ia(project_folder, solicitud_especial=solicitud)
             preguntar_continuar("Evaluación IA")
             fase_4_recortar(project_folder)
             print("\n" + "="*50)
@@ -342,15 +327,8 @@ def main():
         elif opcion == '3':
             fase_2_transcribir(project_folder, force=True)
         elif opcion == '4':
-            try:
-                min_s = int(input("\nDuración MÍNIMA del clip (segundos) [10]: ") or "10")
-                max_s = int(input("Duración MÁXIMA del clip (segundos) [50]: ") or "50")
-                solicitud = input("¿Tienes alguna solicitud especial para la IA? (opcional): ").strip()
-            except ValueError:
-                print("Valor no válido, usando por defecto 10-50s.")
-                min_s, max_s = 10, 50
-                solicitud = ""
-            fase_3_evaluar_ia(project_folder, force=True, min_sec=min_s, max_sec=max_s, solicitud_especial=solicitud)
+            solicitud = input("\n¿Tienes alguna solicitud especial para la IA? (opcional): ").strip()
+            fase_3_evaluar_ia(project_folder, force=True, solicitud_especial=solicitud)
         elif opcion == '5':
             fase_4_recortar(project_folder)
         elif opcion == '0':
