@@ -1,0 +1,28 @@
+# Carpetas de medios
+descargados/
+extraidos/
+
+# Archivos de texto generados
+*.txt
+*.log
+
+# Archivos multimedia (si están sueltos)
+*.mp3
+*.mp4
+*.m4a
+*.webm
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Variables de entorno
+.env
+
+# Otros
+.DS_Store
+Thumbs.db
