@@ -1,6 +1,6 @@
-# Carpetas de medios
-descargados/
-extraidos/
+# Carpetas de proyectos generados
+proyectos/
+
 
 # Archivos de texto generados
 *.txt
